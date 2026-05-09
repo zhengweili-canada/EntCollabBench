@@ -1,0 +1,63 @@
+services:
+  csm:
+    image: shivakrishnareddyma225/enterpriseops-gym-mcp-csm:latest
+    container_name: mcp-csm
+    restart: unless-stopped
+    ports:
+      - "8001:8005"
+    volumes:
+      - ../Arena/seed:/seed:ro
+
+  teams:
+    image: shivakrishnareddyma225/enterpriseops-gym-mcp-teams:latest
+    container_name: mcp-teams
+    restart: unless-stopped
+    ports:
+      - "8002:8005"
+    volumes:
+      - ../Arena/seed:/seed:ro
+
+  calendar:
+    image: shivakrishnareddyma225/enterpriseops-gym-mcp-calendar:latest
+    container_name: mcp-calendar
+    restart: unless-stopped
+    ports:
+      - "8003:8003"
+    volumes:
+      - ../Arena/seed:/seed:ro
+
+  email:
+    image: shivakrishnareddyma225/enterpriseops-gym-mcp-email:latest
+    container_name: mcp-email
+    restart: unless-stopped
+    ports:
+      - "8004:8005"
+    volumes:
+      - ../Arena/seed:/seed:ro
+
+  itsm:
+    image: shivakrishnareddyma225/enterpriseops-gym-mcp-itsm:latest
+    container_name: mcp-itsm
+    restart: unless-stopped
+    ports:
+      - "8006:8005"
+    volumes:
+      - ../Arena/seed:/seed:ro
+
+  drive:
+    image: shivakrishnareddyma225/enterpriseops-gym-mcp-drive:latest
+    container_name: mcp-drive
+    restart: unless-stopped
+    ports:
+      - "8009:8005"
+    volumes:
+      - ../Arena/seed:/seed:ro
+
+  hr:
+    image: shivakrishnareddyma225/enterpriseops-gym-mcp-hr:latest
+    container_name: mcp-hr
+    restart: unless-stopped
+    ports:
+      - "8010:8005"
+    volumes:
+      - ../Arena/seed:/seed:ro

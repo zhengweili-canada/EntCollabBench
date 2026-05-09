@@ -1,0 +1,639 @@
+services:
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+
+  agent-it-service-desk-l1:
+    build:
+      context: ..
+      dockerfile: agent/Dockerfile
+      args:
+        AGENT_NAME: "it_service_desk_l1"
+    image: company-agent-team-it-service-desk-l1:latest
+    pull_policy: never
+    command:
+      - "sh"
+      - "-lc"
+      - >
+        mkdir -p /app/workspace &&
+        if [ -d /app/local_data/it_service_desk_l1 ] && [ -z "$$(ls -A /app/workspace 2>/dev/null)" ]; then
+          cp -a /app/local_data/it_service_desk_l1/. /app/workspace/ 2>/dev/null || true;
+        fi &&
+        exec python agent.py --agent-name it_service_desk_l1 --port 8001
+    environment:
+      OPENAI_API_KEY: "${OPENAI_API_KEY:?OPENAI_API_KEY is required}"
+      OPENAI_BASE_URL: "${OPENAI_BASE_URL:-https://openrouter.ai/api/v1}"
+      HTTP_PROXY: "${HTTP_PROXY:-}"
+      HTTPS_PROXY: "${HTTPS_PROXY:-}"
+      ALL_PROXY: "${ALL_PROXY:-}"
+      NO_PROXY: "${NO_PROXY:-localhost,127.0.0.1,redis}"
+      http_proxy: "${http_proxy:-${HTTP_PROXY:-}}"
+      https_proxy: "${https_proxy:-${HTTPS_PROXY:-}}"
+      all_proxy: "${all_proxy:-${ALL_PROXY:-}}"
+      AGENT_LLM_MODEL: "${AGENT_LLM_MODEL:?AGENT_LLM_MODEL is required}"
+      AGENT_PEERS_FILE: "/app/config/agent_peers.json"
+      AGENT_SPECS_FILE: "/app/config/agent_specs.json"
+      MCP_ENDPOINTS_FILE: "/app/config/mcp_endpoints.json"
+      AGENT_WORKSPACE_DIR: "/app/workspace"
+      AGENT_DEBUG: "${AGENT_DEBUG:-0}"
+      AGENT_DEBUG_MAX_CHARS: "${AGENT_DEBUG_MAX_CHARS:-500}"
+      AGENT_SUMMARY_ENABLED: "${AGENT_SUMMARY_ENABLED:-1}"
+      AGENT_SUMMARY_MODEL: "${AGENT_SUMMARY_MODEL:?AGENT_SUMMARY_MODEL is required}"
+      AGENT_SUMMARY_TRIGGER_TOKENS: "${AGENT_SUMMARY_TRIGGER_TOKENS:-0}"
+      AGENT_SUMMARY_TRIGGER_MESSAGES: "${AGENT_SUMMARY_TRIGGER_MESSAGES:-12}"
+      AGENT_SUMMARY_KEEP_MESSAGES: "${AGENT_SUMMARY_KEEP_MESSAGES:-6}"
+      AGENT_HTTP_TIMEOUT_SECONDS: "${AGENT_HTTP_TIMEOUT_SECONDS:-300}"
+      MCP_SCHEMA_CONTEXT_MODE: "${MCP_SCHEMA_CONTEXT_MODE:-compact}"
+      MCP_SCHEMA_MEMORY_REDACTION_MODE: "${MCP_SCHEMA_MEMORY_REDACTION_MODE:-placeholder}"
+      AGENT_WORKSPACE_READ_MAX_CHARS: "${AGENT_WORKSPACE_READ_MAX_CHARS:-20000}"
+      AGENT_WORKSPACE_READ_HEAD_LINES: "${AGENT_WORKSPACE_READ_HEAD_LINES:-200}"
+      AGENT_WORKSPACE_READ_LARGE_FILE_BYTES: "${AGENT_WORKSPACE_READ_LARGE_FILE_BYTES:-1048576}"
+      REDIS_URL: "redis://redis:6379/0"
+      AGENT_SESSION_BINDINGS_PREFIX: "company-agent:session-bindings"
+      AGENT_SESSION_BINDINGS_TTL_SECONDS: "86400"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ../config:/app/config:ro
+    ports:
+      - "18001:8001"
+    depends_on:
+      - redis
+
+  agent-it-change-engineer:
+    build:
+      context: ..
+      dockerfile: agent/Dockerfile
+      args:
+        AGENT_NAME: "it_change_engineer"
+    image: company-agent-team-it-change-engineer:latest
+    pull_policy: never
+    command:
+      - "sh"
+      - "-lc"
+      - >
+        mkdir -p /app/workspace &&
+        if [ -d /app/local_data/it_change_engineer ] && [ -z "$$(ls -A /app/workspace 2>/dev/null)" ]; then
+          cp -a /app/local_data/it_change_engineer/. /app/workspace/ 2>/dev/null || true;
+        fi &&
+        exec python agent.py --agent-name it_change_engineer --port 8002
+    environment:
+      OPENAI_API_KEY: "${OPENAI_API_KEY:?OPENAI_API_KEY is required}"
+      OPENAI_BASE_URL: "${OPENAI_BASE_URL:-https://openrouter.ai/api/v1}"
+      HTTP_PROXY: "${HTTP_PROXY:-}"
+      HTTPS_PROXY: "${HTTPS_PROXY:-}"
+      ALL_PROXY: "${ALL_PROXY:-}"
+      NO_PROXY: "${NO_PROXY:-localhost,127.0.0.1,redis}"
+      http_proxy: "${http_proxy:-${HTTP_PROXY:-}}"
+      https_proxy: "${https_proxy:-${HTTPS_PROXY:-}}"
+      all_proxy: "${all_proxy:-${ALL_PROXY:-}}"
+      AGENT_LLM_MODEL: "${AGENT_LLM_MODEL:?AGENT_LLM_MODEL is required}"
+      AGENT_PEERS_FILE: "/app/config/agent_peers.json"
+      AGENT_SPECS_FILE: "/app/config/agent_specs.json"
+      MCP_ENDPOINTS_FILE: "/app/config/mcp_endpoints.json"
+      AGENT_WORKSPACE_DIR: "/app/workspace"
+      AGENT_DEBUG: "${AGENT_DEBUG:-0}"
+      AGENT_DEBUG_MAX_CHARS: "${AGENT_DEBUG_MAX_CHARS:-500}"
+      AGENT_SUMMARY_ENABLED: "${AGENT_SUMMARY_ENABLED:-1}"
+      AGENT_SUMMARY_MODEL: "${AGENT_SUMMARY_MODEL:?AGENT_SUMMARY_MODEL is required}"
+      AGENT_SUMMARY_TRIGGER_TOKENS: "${AGENT_SUMMARY_TRIGGER_TOKENS:-0}"
+      AGENT_SUMMARY_TRIGGER_MESSAGES: "${AGENT_SUMMARY_TRIGGER_MESSAGES:-12}"
+      AGENT_SUMMARY_KEEP_MESSAGES: "${AGENT_SUMMARY_KEEP_MESSAGES:-6}"
+      AGENT_HTTP_TIMEOUT_SECONDS: "${AGENT_HTTP_TIMEOUT_SECONDS:-300}"
+      MCP_SCHEMA_CONTEXT_MODE: "${MCP_SCHEMA_CONTEXT_MODE:-compact}"
+      MCP_SCHEMA_MEMORY_REDACTION_MODE: "${MCP_SCHEMA_MEMORY_REDACTION_MODE:-placeholder}"
+      AGENT_WORKSPACE_READ_MAX_CHARS: "${AGENT_WORKSPACE_READ_MAX_CHARS:-20000}"
+      AGENT_WORKSPACE_READ_HEAD_LINES: "${AGENT_WORKSPACE_READ_HEAD_LINES:-200}"
+      AGENT_WORKSPACE_READ_LARGE_FILE_BYTES: "${AGENT_WORKSPACE_READ_LARGE_FILE_BYTES:-1048576}"
+      REDIS_URL: "redis://redis:6379/0"
+      AGENT_SESSION_BINDINGS_PREFIX: "company-agent:session-bindings"
+      AGENT_SESSION_BINDINGS_TTL_SECONDS: "86400"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ../config:/app/config:ro
+    ports:
+      - "18002:8002"
+    depends_on:
+      - redis
+
+  agent-hr-service-specialist:
+    build:
+      context: ..
+      dockerfile: agent/Dockerfile
+      args:
+        AGENT_NAME: "hr_service_specialist"
+    image: company-agent-team-hr-service-specialist:latest
+    pull_policy: never
+    command:
+      - "sh"
+      - "-lc"
+      - >
+        mkdir -p /app/workspace &&
+        if [ -d /app/local_data/hr_service_specialist ] && [ -z "$$(ls -A /app/workspace 2>/dev/null)" ]; then
+          cp -a /app/local_data/hr_service_specialist/. /app/workspace/ 2>/dev/null || true;
+        fi &&
+        exec python agent.py --agent-name hr_service_specialist --port 8003
+    environment:
+      OPENAI_API_KEY: "${OPENAI_API_KEY:?OPENAI_API_KEY is required}"
+      OPENAI_BASE_URL: "${OPENAI_BASE_URL:-https://openrouter.ai/api/v1}"
+      HTTP_PROXY: "${HTTP_PROXY:-}"
+      HTTPS_PROXY: "${HTTPS_PROXY:-}"
+      ALL_PROXY: "${ALL_PROXY:-}"
+      NO_PROXY: "${NO_PROXY:-localhost,127.0.0.1,redis}"
+      http_proxy: "${http_proxy:-${HTTP_PROXY:-}}"
+      https_proxy: "${https_proxy:-${HTTPS_PROXY:-}}"
+      all_proxy: "${all_proxy:-${ALL_PROXY:-}}"
+      AGENT_LLM_MODEL: "${AGENT_LLM_MODEL:?AGENT_LLM_MODEL is required}"
+      AGENT_PEERS_FILE: "/app/config/agent_peers.json"
+      AGENT_SPECS_FILE: "/app/config/agent_specs.json"
+      MCP_ENDPOINTS_FILE: "/app/config/mcp_endpoints.json"
+      AGENT_WORKSPACE_DIR: "/app/workspace"
+      AGENT_DEBUG: "${AGENT_DEBUG:-0}"
+      AGENT_DEBUG_MAX_CHARS: "${AGENT_DEBUG_MAX_CHARS:-500}"
+      AGENT_SUMMARY_ENABLED: "${AGENT_SUMMARY_ENABLED:-1}"
+      AGENT_SUMMARY_MODEL: "${AGENT_SUMMARY_MODEL:?AGENT_SUMMARY_MODEL is required}"
+      AGENT_SUMMARY_TRIGGER_TOKENS: "${AGENT_SUMMARY_TRIGGER_TOKENS:-0}"
+      AGENT_SUMMARY_TRIGGER_MESSAGES: "${AGENT_SUMMARY_TRIGGER_MESSAGES:-12}"
+      AGENT_SUMMARY_KEEP_MESSAGES: "${AGENT_SUMMARY_KEEP_MESSAGES:-6}"
+      AGENT_HTTP_TIMEOUT_SECONDS: "${AGENT_HTTP_TIMEOUT_SECONDS:-300}"
+      MCP_SCHEMA_CONTEXT_MODE: "${MCP_SCHEMA_CONTEXT_MODE:-compact}"
+      MCP_SCHEMA_MEMORY_REDACTION_MODE: "${MCP_SCHEMA_MEMORY_REDACTION_MODE:-placeholder}"
+      AGENT_WORKSPACE_READ_MAX_CHARS: "${AGENT_WORKSPACE_READ_MAX_CHARS:-20000}"
+      AGENT_WORKSPACE_READ_HEAD_LINES: "${AGENT_WORKSPACE_READ_HEAD_LINES:-200}"
+      AGENT_WORKSPACE_READ_LARGE_FILE_BYTES: "${AGENT_WORKSPACE_READ_LARGE_FILE_BYTES:-1048576}"
+      REDIS_URL: "redis://redis:6379/0"
+      AGENT_SESSION_BINDINGS_PREFIX: "company-agent:session-bindings"
+      AGENT_SESSION_BINDINGS_TTL_SECONDS: "86400"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ../config:/app/config:ro
+    ports:
+      - "18003:8003"
+    depends_on:
+      - redis
+
+  agent-customer-support-specialist:
+    build:
+      context: ..
+      dockerfile: agent/Dockerfile
+      args:
+        AGENT_NAME: "customer_support_specialist"
+    image: company-agent-team-customer-support-specialist:latest
+    pull_policy: never
+    command:
+      - "sh"
+      - "-lc"
+      - >
+        mkdir -p /app/workspace &&
+        if [ -d /app/local_data/customer_support_specialist ] && [ -z "$$(ls -A /app/workspace 2>/dev/null)" ]; then
+          cp -a /app/local_data/customer_support_specialist/. /app/workspace/ 2>/dev/null || true;
+        fi &&
+        exec python agent.py --agent-name customer_support_specialist --port 8004
+    environment:
+      OPENAI_API_KEY: "${OPENAI_API_KEY:?OPENAI_API_KEY is required}"
+      OPENAI_BASE_URL: "${OPENAI_BASE_URL:-https://openrouter.ai/api/v1}"
+      HTTP_PROXY: "${HTTP_PROXY:-}"
+      HTTPS_PROXY: "${HTTPS_PROXY:-}"
+      ALL_PROXY: "${ALL_PROXY:-}"
+      NO_PROXY: "${NO_PROXY:-localhost,127.0.0.1,redis}"
+      http_proxy: "${http_proxy:-${HTTP_PROXY:-}}"
+      https_proxy: "${https_proxy:-${HTTPS_PROXY:-}}"
+      all_proxy: "${all_proxy:-${ALL_PROXY:-}}"
+      AGENT_LLM_MODEL: "${AGENT_LLM_MODEL:?AGENT_LLM_MODEL is required}"
+      AGENT_PEERS_FILE: "/app/config/agent_peers.json"
+      AGENT_SPECS_FILE: "/app/config/agent_specs.json"
+      MCP_ENDPOINTS_FILE: "/app/config/mcp_endpoints.json"
+      AGENT_WORKSPACE_DIR: "/app/workspace"
+      AGENT_DEBUG: "${AGENT_DEBUG:-0}"
+      AGENT_DEBUG_MAX_CHARS: "${AGENT_DEBUG_MAX_CHARS:-500}"
+      AGENT_SUMMARY_ENABLED: "${AGENT_SUMMARY_ENABLED:-1}"
+      AGENT_SUMMARY_MODEL: "${AGENT_SUMMARY_MODEL:?AGENT_SUMMARY_MODEL is required}"
+      AGENT_SUMMARY_TRIGGER_TOKENS: "${AGENT_SUMMARY_TRIGGER_TOKENS:-0}"
+      AGENT_SUMMARY_TRIGGER_MESSAGES: "${AGENT_SUMMARY_TRIGGER_MESSAGES:-12}"
+      AGENT_SUMMARY_KEEP_MESSAGES: "${AGENT_SUMMARY_KEEP_MESSAGES:-6}"
+      AGENT_HTTP_TIMEOUT_SECONDS: "${AGENT_HTTP_TIMEOUT_SECONDS:-300}"
+      MCP_SCHEMA_CONTEXT_MODE: "${MCP_SCHEMA_CONTEXT_MODE:-compact}"
+      MCP_SCHEMA_MEMORY_REDACTION_MODE: "${MCP_SCHEMA_MEMORY_REDACTION_MODE:-placeholder}"
+      AGENT_WORKSPACE_READ_MAX_CHARS: "${AGENT_WORKSPACE_READ_MAX_CHARS:-20000}"
+      AGENT_WORKSPACE_READ_HEAD_LINES: "${AGENT_WORKSPACE_READ_HEAD_LINES:-200}"
+      AGENT_WORKSPACE_READ_LARGE_FILE_BYTES: "${AGENT_WORKSPACE_READ_LARGE_FILE_BYTES:-1048576}"
+      REDIS_URL: "redis://redis:6379/0"
+      AGENT_SESSION_BINDINGS_PREFIX: "company-agent:session-bindings"
+      AGENT_SESSION_BINDINGS_TTL_SECONDS: "86400"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ../config:/app/config:ro
+    ports:
+      - "18004:8004"
+    depends_on:
+      - redis
+
+  agent-knowledge-base-specialist:
+    build:
+      context: ..
+      dockerfile: agent/Dockerfile
+      args:
+        AGENT_NAME: "knowledge_base_specialist"
+    image: company-agent-team-knowledge-base-specialist:latest
+    pull_policy: never
+    command:
+      - "sh"
+      - "-lc"
+      - >
+        mkdir -p /app/workspace &&
+        if [ -d /app/local_data/knowledge_base_specialist ] && [ -z "$$(ls -A /app/workspace 2>/dev/null)" ]; then
+          cp -a /app/local_data/knowledge_base_specialist/. /app/workspace/ 2>/dev/null || true;
+        fi &&
+        exec python agent.py --agent-name knowledge_base_specialist --port 8005
+    environment:
+      OPENAI_API_KEY: "${OPENAI_API_KEY:?OPENAI_API_KEY is required}"
+      OPENAI_BASE_URL: "${OPENAI_BASE_URL:-https://openrouter.ai/api/v1}"
+      HTTP_PROXY: "${HTTP_PROXY:-}"
+      HTTPS_PROXY: "${HTTPS_PROXY:-}"
+      ALL_PROXY: "${ALL_PROXY:-}"
+      NO_PROXY: "${NO_PROXY:-localhost,127.0.0.1,redis}"
+      http_proxy: "${http_proxy:-${HTTP_PROXY:-}}"
+      https_proxy: "${https_proxy:-${HTTPS_PROXY:-}}"
+      all_proxy: "${all_proxy:-${ALL_PROXY:-}}"
+      AGENT_LLM_MODEL: "${AGENT_LLM_MODEL:?AGENT_LLM_MODEL is required}"
+      AGENT_PEERS_FILE: "/app/config/agent_peers.json"
+      AGENT_SPECS_FILE: "/app/config/agent_specs.json"
+      MCP_ENDPOINTS_FILE: "/app/config/mcp_endpoints.json"
+      AGENT_WORKSPACE_DIR: "/app/workspace"
+      AGENT_DEBUG: "${AGENT_DEBUG:-0}"
+      AGENT_DEBUG_MAX_CHARS: "${AGENT_DEBUG_MAX_CHARS:-500}"
+      AGENT_SUMMARY_ENABLED: "${AGENT_SUMMARY_ENABLED:-1}"
+      AGENT_SUMMARY_MODEL: "${AGENT_SUMMARY_MODEL:?AGENT_SUMMARY_MODEL is required}"
+      AGENT_SUMMARY_TRIGGER_TOKENS: "${AGENT_SUMMARY_TRIGGER_TOKENS:-0}"
+      AGENT_SUMMARY_TRIGGER_MESSAGES: "${AGENT_SUMMARY_TRIGGER_MESSAGES:-12}"
+      AGENT_SUMMARY_KEEP_MESSAGES: "${AGENT_SUMMARY_KEEP_MESSAGES:-6}"
+      AGENT_HTTP_TIMEOUT_SECONDS: "${AGENT_HTTP_TIMEOUT_SECONDS:-300}"
+      MCP_SCHEMA_CONTEXT_MODE: "${MCP_SCHEMA_CONTEXT_MODE:-compact}"
+      MCP_SCHEMA_MEMORY_REDACTION_MODE: "${MCP_SCHEMA_MEMORY_REDACTION_MODE:-placeholder}"
+      AGENT_WORKSPACE_READ_MAX_CHARS: "${AGENT_WORKSPACE_READ_MAX_CHARS:-20000}"
+      AGENT_WORKSPACE_READ_HEAD_LINES: "${AGENT_WORKSPACE_READ_HEAD_LINES:-200}"
+      AGENT_WORKSPACE_READ_LARGE_FILE_BYTES: "${AGENT_WORKSPACE_READ_LARGE_FILE_BYTES:-1048576}"
+      REDIS_URL: "redis://redis:6379/0"
+      AGENT_SESSION_BINDINGS_PREFIX: "company-agent:session-bindings"
+      AGENT_SESSION_BINDINGS_TTL_SECONDS: "86400"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ../config:/app/config:ro
+    ports:
+      - "18005:8005"
+    depends_on:
+      - redis
+
+  agent-collaboration-ops-specialist:
+    build:
+      context: ..
+      dockerfile: agent/Dockerfile
+      args:
+        AGENT_NAME: "collaboration_ops_specialist"
+    image: company-agent-team-collaboration-ops-specialist:latest
+    pull_policy: never
+    command:
+      - "sh"
+      - "-lc"
+      - >
+        mkdir -p /app/workspace &&
+        if [ -d /app/local_data/collaboration_ops_specialist ] && [ -z "$$(ls -A /app/workspace 2>/dev/null)" ]; then
+          cp -a /app/local_data/collaboration_ops_specialist/. /app/workspace/ 2>/dev/null || true;
+        fi &&
+        exec python agent.py --agent-name collaboration_ops_specialist --port 8006
+    environment:
+      OPENAI_API_KEY: "${OPENAI_API_KEY:?OPENAI_API_KEY is required}"
+      OPENAI_BASE_URL: "${OPENAI_BASE_URL:-https://openrouter.ai/api/v1}"
+      HTTP_PROXY: "${HTTP_PROXY:-}"
+      HTTPS_PROXY: "${HTTPS_PROXY:-}"
+      ALL_PROXY: "${ALL_PROXY:-}"
+      NO_PROXY: "${NO_PROXY:-localhost,127.0.0.1,redis}"
+      http_proxy: "${http_proxy:-${HTTP_PROXY:-}}"
+      https_proxy: "${https_proxy:-${HTTPS_PROXY:-}}"
+      all_proxy: "${all_proxy:-${ALL_PROXY:-}}"
+      AGENT_LLM_MODEL: "${AGENT_LLM_MODEL:?AGENT_LLM_MODEL is required}"
+      AGENT_PEERS_FILE: "/app/config/agent_peers.json"
+      AGENT_SPECS_FILE: "/app/config/agent_specs.json"
+      MCP_ENDPOINTS_FILE: "/app/config/mcp_endpoints.json"
+      AGENT_WORKSPACE_DIR: "/app/workspace"
+      AGENT_DEBUG: "${AGENT_DEBUG:-0}"
+      AGENT_DEBUG_MAX_CHARS: "${AGENT_DEBUG_MAX_CHARS:-500}"
+      AGENT_SUMMARY_ENABLED: "${AGENT_SUMMARY_ENABLED:-1}"
+      AGENT_SUMMARY_MODEL: "${AGENT_SUMMARY_MODEL:?AGENT_SUMMARY_MODEL is required}"
+      AGENT_SUMMARY_TRIGGER_TOKENS: "${AGENT_SUMMARY_TRIGGER_TOKENS:-0}"
+      AGENT_SUMMARY_TRIGGER_MESSAGES: "${AGENT_SUMMARY_TRIGGER_MESSAGES:-12}"
+      AGENT_SUMMARY_KEEP_MESSAGES: "${AGENT_SUMMARY_KEEP_MESSAGES:-6}"
+      AGENT_HTTP_TIMEOUT_SECONDS: "${AGENT_HTTP_TIMEOUT_SECONDS:-300}"
+      MCP_SCHEMA_CONTEXT_MODE: "${MCP_SCHEMA_CONTEXT_MODE:-compact}"
+      MCP_SCHEMA_MEMORY_REDACTION_MODE: "${MCP_SCHEMA_MEMORY_REDACTION_MODE:-placeholder}"
+      AGENT_WORKSPACE_READ_MAX_CHARS: "${AGENT_WORKSPACE_READ_MAX_CHARS:-20000}"
+      AGENT_WORKSPACE_READ_HEAD_LINES: "${AGENT_WORKSPACE_READ_HEAD_LINES:-200}"
+      AGENT_WORKSPACE_READ_LARGE_FILE_BYTES: "${AGENT_WORKSPACE_READ_LARGE_FILE_BYTES:-1048576}"
+      REDIS_URL: "redis://redis:6379/0"
+      AGENT_SESSION_BINDINGS_PREFIX: "company-agent:session-bindings"
+      AGENT_SESSION_BINDINGS_TTL_SECONDS: "86400"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ../config:/app/config:ro
+    ports:
+      - "18006:8006"
+    depends_on:
+      - redis
+
+  agent-developer-engineer:
+    build:
+      context: ..
+      dockerfile: agent/Dockerfile
+      args:
+        AGENT_NAME: "developer_engineer"
+    image: company-agent-team-developer-engineer:latest
+    pull_policy: never
+    command:
+      - "sh"
+      - "-lc"
+      - >
+        mkdir -p /app/workspace &&
+        if [ -d /app/local_data/developer_engineer ] && [ -z "$$(ls -A /app/workspace 2>/dev/null)" ]; then
+          cp -a /app/local_data/developer_engineer/. /app/workspace/ 2>/dev/null || true;
+        fi &&
+        exec python agent.py --agent-name developer_engineer --port 8007
+    environment:
+      OPENAI_API_KEY: "${OPENAI_API_KEY:?OPENAI_API_KEY is required}"
+      OPENAI_BASE_URL: "${OPENAI_BASE_URL:-https://openrouter.ai/api/v1}"
+      HTTP_PROXY: "${HTTP_PROXY:-}"
+      HTTPS_PROXY: "${HTTPS_PROXY:-}"
+      ALL_PROXY: "${ALL_PROXY:-}"
+      NO_PROXY: "${NO_PROXY:-localhost,127.0.0.1,redis}"
+      http_proxy: "${http_proxy:-${HTTP_PROXY:-}}"
+      https_proxy: "${https_proxy:-${HTTPS_PROXY:-}}"
+      all_proxy: "${all_proxy:-${ALL_PROXY:-}}"
+      AGENT_LLM_MODEL: "${AGENT_LLM_MODEL:?AGENT_LLM_MODEL is required}"
+      AGENT_PEERS_FILE: "/app/config/agent_peers.json"
+      AGENT_SPECS_FILE: "/app/config/agent_specs.json"
+      MCP_ENDPOINTS_FILE: "/app/config/mcp_endpoints.json"
+      AGENT_WORKSPACE_DIR: "/app/workspace"
+      AGENT_DEBUG: "${AGENT_DEBUG:-0}"
+      AGENT_DEBUG_MAX_CHARS: "${AGENT_DEBUG_MAX_CHARS:-500}"
+      AGENT_SUMMARY_ENABLED: "${AGENT_SUMMARY_ENABLED:-1}"
+      AGENT_SUMMARY_MODEL: "${AGENT_SUMMARY_MODEL:?AGENT_SUMMARY_MODEL is required}"
+      AGENT_SUMMARY_TRIGGER_TOKENS: "${AGENT_SUMMARY_TRIGGER_TOKENS:-0}"
+      AGENT_SUMMARY_TRIGGER_MESSAGES: "${AGENT_SUMMARY_TRIGGER_MESSAGES:-12}"
+      AGENT_SUMMARY_KEEP_MESSAGES: "${AGENT_SUMMARY_KEEP_MESSAGES:-6}"
+      AGENT_HTTP_TIMEOUT_SECONDS: "${AGENT_HTTP_TIMEOUT_SECONDS:-300}"
+      MCP_SCHEMA_CONTEXT_MODE: "${MCP_SCHEMA_CONTEXT_MODE:-compact}"
+      MCP_SCHEMA_MEMORY_REDACTION_MODE: "${MCP_SCHEMA_MEMORY_REDACTION_MODE:-placeholder}"
+      AGENT_WORKSPACE_READ_MAX_CHARS: "${AGENT_WORKSPACE_READ_MAX_CHARS:-20000}"
+      AGENT_WORKSPACE_READ_HEAD_LINES: "${AGENT_WORKSPACE_READ_HEAD_LINES:-200}"
+      AGENT_WORKSPACE_READ_LARGE_FILE_BYTES: "${AGENT_WORKSPACE_READ_LARGE_FILE_BYTES:-1048576}"
+      REDIS_URL: "redis://redis:6379/0"
+      AGENT_SESSION_BINDINGS_PREFIX: "company-agent:session-bindings"
+      AGENT_SESSION_BINDINGS_TTL_SECONDS: "86400"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ../config:/app/config:ro
+    ports:
+      - "18007:8007"
+    depends_on:
+      - redis
+
+  agent-qa-test-engineer:
+    build:
+      context: ..
+      dockerfile: agent/Dockerfile
+      args:
+        AGENT_NAME: "qa_test_engineer"
+    image: company-agent-team-qa-test-engineer:latest
+    pull_policy: never
+    command:
+      - "sh"
+      - "-lc"
+      - >
+        mkdir -p /app/workspace &&
+        if [ -d /app/local_data/qa_test_engineer ] && [ -z "$$(ls -A /app/workspace 2>/dev/null)" ]; then
+          cp -a /app/local_data/qa_test_engineer/. /app/workspace/ 2>/dev/null || true;
+        fi &&
+        exec python agent.py --agent-name qa_test_engineer --port 8008
+    environment:
+      OPENAI_API_KEY: "${OPENAI_API_KEY:?OPENAI_API_KEY is required}"
+      OPENAI_BASE_URL: "${OPENAI_BASE_URL:-https://openrouter.ai/api/v1}"
+      HTTP_PROXY: "${HTTP_PROXY:-}"
+      HTTPS_PROXY: "${HTTPS_PROXY:-}"
+      ALL_PROXY: "${ALL_PROXY:-}"
+      NO_PROXY: "${NO_PROXY:-localhost,127.0.0.1,redis}"
+      http_proxy: "${http_proxy:-${HTTP_PROXY:-}}"
+      https_proxy: "${https_proxy:-${HTTPS_PROXY:-}}"
+      all_proxy: "${all_proxy:-${ALL_PROXY:-}}"
+      AGENT_LLM_MODEL: "${AGENT_LLM_MODEL:?AGENT_LLM_MODEL is required}"
+      AGENT_PEERS_FILE: "/app/config/agent_peers.json"
+      AGENT_SPECS_FILE: "/app/config/agent_specs.json"
+      MCP_ENDPOINTS_FILE: "/app/config/mcp_endpoints.json"
+      AGENT_WORKSPACE_DIR: "/app/workspace"
+      AGENT_DEBUG: "${AGENT_DEBUG:-0}"
+      AGENT_DEBUG_MAX_CHARS: "${AGENT_DEBUG_MAX_CHARS:-500}"
+      AGENT_SUMMARY_ENABLED: "${AGENT_SUMMARY_ENABLED:-1}"
+      AGENT_SUMMARY_MODEL: "${AGENT_SUMMARY_MODEL:?AGENT_SUMMARY_MODEL is required}"
+      AGENT_SUMMARY_TRIGGER_TOKENS: "${AGENT_SUMMARY_TRIGGER_TOKENS:-0}"
+      AGENT_SUMMARY_TRIGGER_MESSAGES: "${AGENT_SUMMARY_TRIGGER_MESSAGES:-12}"
+      AGENT_SUMMARY_KEEP_MESSAGES: "${AGENT_SUMMARY_KEEP_MESSAGES:-6}"
+      AGENT_HTTP_TIMEOUT_SECONDS: "${AGENT_HTTP_TIMEOUT_SECONDS:-300}"
+      MCP_SCHEMA_CONTEXT_MODE: "${MCP_SCHEMA_CONTEXT_MODE:-compact}"
+      MCP_SCHEMA_MEMORY_REDACTION_MODE: "${MCP_SCHEMA_MEMORY_REDACTION_MODE:-placeholder}"
+      AGENT_WORKSPACE_READ_MAX_CHARS: "${AGENT_WORKSPACE_READ_MAX_CHARS:-20000}"
+      AGENT_WORKSPACE_READ_HEAD_LINES: "${AGENT_WORKSPACE_READ_HEAD_LINES:-200}"
+      AGENT_WORKSPACE_READ_LARGE_FILE_BYTES: "${AGENT_WORKSPACE_READ_LARGE_FILE_BYTES:-1048576}"
+      REDIS_URL: "redis://redis:6379/0"
+      AGENT_SESSION_BINDINGS_PREFIX: "company-agent:session-bindings"
+      AGENT_SESSION_BINDINGS_TTL_SECONDS: "86400"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ../config:/app/config:ro
+    ports:
+      - "18008:8008"
+    depends_on:
+      - redis
+
+  agent-finance-approval-specialist:
+    build:
+      context: ..
+      dockerfile: agent/Dockerfile
+      args:
+        AGENT_NAME: "finance_approval_specialist"
+    image: company-agent-team-finance-approval-specialist:latest
+    pull_policy: never
+    command:
+      - "sh"
+      - "-lc"
+      - >
+        mkdir -p /app/workspace &&
+        if [ -d /app/local_data/finance_approval_specialist ] && [ -z "$$(ls -A /app/workspace 2>/dev/null)" ]; then
+          cp -a /app/local_data/finance_approval_specialist/. /app/workspace/ 2>/dev/null || true;
+        fi &&
+        exec python agent.py --agent-name finance_approval_specialist --port 8009
+    environment:
+      OPENAI_API_KEY: "${OPENAI_API_KEY:?OPENAI_API_KEY is required}"
+      OPENAI_BASE_URL: "${OPENAI_BASE_URL:-https://openrouter.ai/api/v1}"
+      HTTP_PROXY: "${HTTP_PROXY:-}"
+      HTTPS_PROXY: "${HTTPS_PROXY:-}"
+      ALL_PROXY: "${ALL_PROXY:-}"
+      NO_PROXY: "${NO_PROXY:-localhost,127.0.0.1,redis}"
+      http_proxy: "${http_proxy:-${HTTP_PROXY:-}}"
+      https_proxy: "${https_proxy:-${HTTPS_PROXY:-}}"
+      all_proxy: "${all_proxy:-${ALL_PROXY:-}}"
+      AGENT_LLM_MODEL: "${AGENT_LLM_MODEL:?AGENT_LLM_MODEL is required}"
+      AGENT_PEERS_FILE: "/app/config/agent_peers.json"
+      AGENT_SPECS_FILE: "/app/config/agent_specs.json"
+      MCP_ENDPOINTS_FILE: "/app/config/mcp_endpoints.json"
+      AGENT_WORKSPACE_DIR: "/app/workspace"
+      AGENT_DEBUG: "${AGENT_DEBUG:-0}"
+      AGENT_DEBUG_MAX_CHARS: "${AGENT_DEBUG_MAX_CHARS:-500}"
+      AGENT_SUMMARY_ENABLED: "${AGENT_SUMMARY_ENABLED:-1}"
+      AGENT_SUMMARY_MODEL: "${AGENT_SUMMARY_MODEL:?AGENT_SUMMARY_MODEL is required}"
+      AGENT_SUMMARY_TRIGGER_TOKENS: "${AGENT_SUMMARY_TRIGGER_TOKENS:-0}"
+      AGENT_SUMMARY_TRIGGER_MESSAGES: "${AGENT_SUMMARY_TRIGGER_MESSAGES:-12}"
+      AGENT_SUMMARY_KEEP_MESSAGES: "${AGENT_SUMMARY_KEEP_MESSAGES:-6}"
+      AGENT_HTTP_TIMEOUT_SECONDS: "${AGENT_HTTP_TIMEOUT_SECONDS:-300}"
+      MCP_SCHEMA_CONTEXT_MODE: "${MCP_SCHEMA_CONTEXT_MODE:-compact}"
+      MCP_SCHEMA_MEMORY_REDACTION_MODE: "${MCP_SCHEMA_MEMORY_REDACTION_MODE:-placeholder}"
+      AGENT_WORKSPACE_READ_MAX_CHARS: "${AGENT_WORKSPACE_READ_MAX_CHARS:-20000}"
+      AGENT_WORKSPACE_READ_HEAD_LINES: "${AGENT_WORKSPACE_READ_HEAD_LINES:-200}"
+      AGENT_WORKSPACE_READ_LARGE_FILE_BYTES: "${AGENT_WORKSPACE_READ_LARGE_FILE_BYTES:-1048576}"
+      REDIS_URL: "redis://redis:6379/0"
+      AGENT_SESSION_BINDINGS_PREFIX: "company-agent:session-bindings"
+      AGENT_SESSION_BINDINGS_TTL_SECONDS: "86400"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ../config:/app/config:ro
+    ports:
+      - "18009:8009"
+    depends_on:
+      - redis
+
+  agent-legal-approval-specialist:
+    build:
+      context: ..
+      dockerfile: agent/Dockerfile
+      args:
+        AGENT_NAME: "legal_approval_specialist"
+    image: company-agent-team-legal-approval-specialist:latest
+    pull_policy: never
+    command:
+      - "sh"
+      - "-lc"
+      - >
+        mkdir -p /app/workspace &&
+        if [ -d /app/local_data/legal_approval_specialist ] && [ -z "$$(ls -A /app/workspace 2>/dev/null)" ]; then
+          cp -a /app/local_data/legal_approval_specialist/. /app/workspace/ 2>/dev/null || true;
+        fi &&
+        exec python agent.py --agent-name legal_approval_specialist --port 8010
+    environment:
+      OPENAI_API_KEY: "${OPENAI_API_KEY:?OPENAI_API_KEY is required}"
+      OPENAI_BASE_URL: "${OPENAI_BASE_URL:-https://openrouter.ai/api/v1}"
+      HTTP_PROXY: "${HTTP_PROXY:-}"
+      HTTPS_PROXY: "${HTTPS_PROXY:-}"
+      ALL_PROXY: "${ALL_PROXY:-}"
+      NO_PROXY: "${NO_PROXY:-localhost,127.0.0.1,redis}"
+      http_proxy: "${http_proxy:-${HTTP_PROXY:-}}"
+      https_proxy: "${https_proxy:-${HTTPS_PROXY:-}}"
+      all_proxy: "${all_proxy:-${ALL_PROXY:-}}"
+      AGENT_LLM_MODEL: "${AGENT_LLM_MODEL:?AGENT_LLM_MODEL is required}"
+      AGENT_PEERS_FILE: "/app/config/agent_peers.json"
+      AGENT_SPECS_FILE: "/app/config/agent_specs.json"
+      MCP_ENDPOINTS_FILE: "/app/config/mcp_endpoints.json"
+      AGENT_WORKSPACE_DIR: "/app/workspace"
+      AGENT_DEBUG: "${AGENT_DEBUG:-0}"
+      AGENT_DEBUG_MAX_CHARS: "${AGENT_DEBUG_MAX_CHARS:-500}"
+      AGENT_SUMMARY_ENABLED: "${AGENT_SUMMARY_ENABLED:-1}"
+      AGENT_SUMMARY_MODEL: "${AGENT_SUMMARY_MODEL:?AGENT_SUMMARY_MODEL is required}"
+      AGENT_SUMMARY_TRIGGER_TOKENS: "${AGENT_SUMMARY_TRIGGER_TOKENS:-0}"
+      AGENT_SUMMARY_TRIGGER_MESSAGES: "${AGENT_SUMMARY_TRIGGER_MESSAGES:-12}"
+      AGENT_SUMMARY_KEEP_MESSAGES: "${AGENT_SUMMARY_KEEP_MESSAGES:-6}"
+      AGENT_HTTP_TIMEOUT_SECONDS: "${AGENT_HTTP_TIMEOUT_SECONDS:-300}"
+      MCP_SCHEMA_CONTEXT_MODE: "${MCP_SCHEMA_CONTEXT_MODE:-compact}"
+      MCP_SCHEMA_MEMORY_REDACTION_MODE: "${MCP_SCHEMA_MEMORY_REDACTION_MODE:-placeholder}"
+      AGENT_WORKSPACE_READ_MAX_CHARS: "${AGENT_WORKSPACE_READ_MAX_CHARS:-20000}"
+      AGENT_WORKSPACE_READ_HEAD_LINES: "${AGENT_WORKSPACE_READ_HEAD_LINES:-200}"
+      AGENT_WORKSPACE_READ_LARGE_FILE_BYTES: "${AGENT_WORKSPACE_READ_LARGE_FILE_BYTES:-1048576}"
+      REDIS_URL: "redis://redis:6379/0"
+      AGENT_SESSION_BINDINGS_PREFIX: "company-agent:session-bindings"
+      AGENT_SESSION_BINDINGS_TTL_SECONDS: "86400"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ../config:/app/config:ro
+    ports:
+      - "18010:8010"
+    depends_on:
+      - redis
+
+  agent-procurement-approval-specialist:
+    build:
+      context: ..
+      dockerfile: agent/Dockerfile
+      args:
+        AGENT_NAME: "procurement_approval_specialist"
+    image: company-agent-team-procurement-approval-specialist:latest
+    pull_policy: never
+    command:
+      - "sh"
+      - "-lc"
+      - >
+        mkdir -p /app/workspace &&
+        if [ -d /app/local_data/procurement_approval_specialist ] && [ -z "$$(ls -A /app/workspace 2>/dev/null)" ]; then
+          cp -a /app/local_data/procurement_approval_specialist/. /app/workspace/ 2>/dev/null || true;
+        fi &&
+        exec python agent.py --agent-name procurement_approval_specialist --port 8011
+    environment:
+      OPENAI_API_KEY: "${OPENAI_API_KEY:?OPENAI_API_KEY is required}"
+      OPENAI_BASE_URL: "${OPENAI_BASE_URL:-https://openrouter.ai/api/v1}"
+      HTTP_PROXY: "${HTTP_PROXY:-}"
+      HTTPS_PROXY: "${HTTPS_PROXY:-}"
+      ALL_PROXY: "${ALL_PROXY:-}"
+      NO_PROXY: "${NO_PROXY:-localhost,127.0.0.1,redis}"
+      http_proxy: "${http_proxy:-${HTTP_PROXY:-}}"
+      https_proxy: "${https_proxy:-${HTTPS_PROXY:-}}"
+      all_proxy: "${all_proxy:-${ALL_PROXY:-}}"
+      AGENT_LLM_MODEL: "${AGENT_LLM_MODEL:?AGENT_LLM_MODEL is required}"
+      AGENT_PEERS_FILE: "/app/config/agent_peers.json"
+      AGENT_SPECS_FILE: "/app/config/agent_specs.json"
+      MCP_ENDPOINTS_FILE: "/app/config/mcp_endpoints.json"
+      AGENT_WORKSPACE_DIR: "/app/workspace"
+      AGENT_DEBUG: "${AGENT_DEBUG:-0}"
+      AGENT_DEBUG_MAX_CHARS: "${AGENT_DEBUG_MAX_CHARS:-500}"
+      AGENT_SUMMARY_ENABLED: "${AGENT_SUMMARY_ENABLED:-1}"
+      AGENT_SUMMARY_MODEL: "${AGENT_SUMMARY_MODEL:?AGENT_SUMMARY_MODEL is required}"
+      AGENT_SUMMARY_TRIGGER_TOKENS: "${AGENT_SUMMARY_TRIGGER_TOKENS:-0}"
+      AGENT_SUMMARY_TRIGGER_MESSAGES: "${AGENT_SUMMARY_TRIGGER_MESSAGES:-12}"
+      AGENT_SUMMARY_KEEP_MESSAGES: "${AGENT_SUMMARY_KEEP_MESSAGES:-6}"
+      AGENT_HTTP_TIMEOUT_SECONDS: "${AGENT_HTTP_TIMEOUT_SECONDS:-300}"
+      MCP_SCHEMA_CONTEXT_MODE: "${MCP_SCHEMA_CONTEXT_MODE:-compact}"
+      MCP_SCHEMA_MEMORY_REDACTION_MODE: "${MCP_SCHEMA_MEMORY_REDACTION_MODE:-placeholder}"
+      AGENT_WORKSPACE_READ_MAX_CHARS: "${AGENT_WORKSPACE_READ_MAX_CHARS:-20000}"
+      AGENT_WORKSPACE_READ_HEAD_LINES: "${AGENT_WORKSPACE_READ_HEAD_LINES:-200}"
+      AGENT_WORKSPACE_READ_LARGE_FILE_BYTES: "${AGENT_WORKSPACE_READ_LARGE_FILE_BYTES:-1048576}"
+      REDIS_URL: "redis://redis:6379/0"
+      AGENT_SESSION_BINDINGS_PREFIX: "company-agent:session-bindings"
+      AGENT_SESSION_BINDINGS_TTL_SECONDS: "86400"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ../config:/app/config:ro
+    ports:
+      - "18011:8011"
+    depends_on:
+      - redis
+
+volumes:
+  redis-data:

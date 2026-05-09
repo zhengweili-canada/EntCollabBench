@@ -1,0 +1,15 @@
+*
+!docker/requirements.txt
+!agent/requirements.txt
+!agent.py
+!api_schema.py
+!session_store.py
+!tool/
+!tool/**
+!local_data/
+!local_data/**
+
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd

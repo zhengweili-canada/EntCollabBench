@@ -1,0 +1,13 @@
+{
+  "it_service_desk_l1": "http://127.0.0.1:18001",
+  "it_change_engineer": "http://127.0.0.1:18002",
+  "hr_service_specialist": "http://127.0.0.1:18003",
+  "customer_support_specialist": "http://127.0.0.1:18004",
+  "knowledge_base_specialist": "http://127.0.0.1:18005",
+  "collaboration_ops_specialist": "http://127.0.0.1:18006",
+  "developer_engineer": "http://127.0.0.1:18007",
+  "qa_test_engineer": "http://127.0.0.1:18008",
+  "finance_approval_specialist": "http://127.0.0.1:18009",
+  "legal_approval_specialist": "http://127.0.0.1:18010",
+  "procurement_approval_specialist": "http://127.0.0.1:18011"
+}

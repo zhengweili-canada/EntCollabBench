@@ -1,0 +1,13 @@
+{
+  "it_service_desk_l1": "http://agent-it-service-desk-l1:8001",
+  "it_change_engineer": "http://agent-it-change-engineer:8002",
+  "hr_service_specialist": "http://agent-hr-service-specialist:8003",
+  "customer_support_specialist": "http://agent-customer-support-specialist:8004",
+  "knowledge_base_specialist": "http://agent-knowledge-base-specialist:8005",
+  "collaboration_ops_specialist": "http://agent-collaboration-ops-specialist:8006",
+  "developer_engineer": "http://agent-developer-engineer:8007",
+  "qa_test_engineer": "http://agent-qa-test-engineer:8008",
+  "finance_approval_specialist": "http://agent-finance-approval-specialist:8009",
+  "legal_approval_specialist": "http://agent-legal-approval-specialist:8010",
+  "procurement_approval_specialist": "http://agent-procurement-approval-specialist:8011"
+}

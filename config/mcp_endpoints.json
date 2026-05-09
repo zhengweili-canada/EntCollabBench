@@ -1,0 +1,10 @@
+{
+  "calendar": "http://host.docker.internal:8003/mcp",
+  "csm": "http://host.docker.internal:8001/mcp",
+  "drive": "http://host.docker.internal:8009/mcp",
+  "email": "http://host.docker.internal:8004/mcp",
+  "gitea": "http://host.docker.internal:8011/mcp",
+  "hr": "http://host.docker.internal:8010/mcp",
+  "itsm": "http://host.docker.internal:8006/mcp",
+  "teams": "http://host.docker.internal:8002/mcp"
+}

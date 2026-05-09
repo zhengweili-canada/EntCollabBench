@@ -1,0 +1,112 @@
+{
+  "it_service_desk_l1": {
+    "calendar": "AGT_IT_L1_TOKEN_V1",
+    "csm": "",
+    "drive": "AGT_IT_L1_TOKEN_V1",
+    "email": "AGT_IT_L1_TOKEN_V1",
+    "gitea": "",
+    "hr": "",
+    "itsm": "AGT_IT_L1_TOKEN_V1",
+    "teams": "AGT_IT_L1_TOKEN_V1"
+  },
+  "it_change_engineer": {
+    "calendar": "AGT_IT_CHG_TOKEN_V1",
+    "csm": "",
+    "drive": "AGT_IT_CHG_TOKEN_V1",
+    "email": "AGT_IT_CHG_TOKEN_V1",
+    "gitea": "",
+    "hr": "",
+    "itsm": "AGT_IT_CHG_TOKEN_V1",
+    "teams": "AGT_IT_CHG_TOKEN_V1"
+  },
+  "hr_service_specialist": {
+    "calendar": "AGT_HR_SRVC_TOKEN_V1",
+    "csm": "",
+    "drive": "AGT_HR_SRVC_TOKEN_V1",
+    "email": "AGT_HR_SRVC_TOKEN_V1",
+    "gitea": "",
+    "hr": "AGT_HR_SRVC_TOKEN_V1",
+    "itsm": "",
+    "teams": "AGT_HR_SRVC_TOKEN_V1"
+  },
+  "customer_support_specialist": {
+    "calendar": "AGT_CSM_SUP_TOKEN_V1",
+    "csm": "carlos.mendez@techcorp.com",
+    "drive": "AGT_CSM_SUP_TOKEN_V1",
+    "email": "AGT_CSM_SUP_TOKEN_V1",
+    "gitea": "",
+    "hr": "",
+    "itsm": "",
+    "teams": "AGT_CSM_SUP_TOKEN_V1"
+  },
+  "knowledge_base_specialist": {
+    "calendar": "AGT_KB_SPEC_TOKEN_V1",
+    "csm": "priya.nair@techcorp.com",
+    "drive": "AGT_KB_SPEC_TOKEN_V1",
+    "email": "AGT_KB_SPEC_TOKEN_V1",
+    "gitea": "",
+    "hr": "AGT_KB_SPEC_TOKEN_V1",
+    "itsm": "AGT_KB_SPEC_TOKEN_V1",
+    "teams": "AGT_KB_SPEC_TOKEN_V1"
+  },
+  "collaboration_ops_specialist": {
+    "calendar": "AGT_COLLAB_OPS_TOKEN_V1",
+    "csm": "",
+    "drive": "AGT_COLLAB_OPS_TOKEN_V1",
+    "email": "AGT_COLLAB_OPS_TOKEN_V1",
+    "gitea": "",
+    "hr": "",
+    "itsm": "",
+    "teams": "AGT_COLLAB_OPS_TOKEN_V1"
+  },
+  "developer_engineer": {
+    "calendar": "AGT_DEV_ENG_TOKEN_V1",
+    "csm": "",
+    "drive": "AGT_DEV_ENG_TOKEN_V1",
+    "email": "AGT_DEV_ENG_TOKEN_V1",
+    "gitea": "AGT_DEV_ENG_TOKEN_V1",
+    "hr": "",
+    "itsm": "",
+    "teams": "AGT_DEV_ENG_TOKEN_V1"
+  },
+  "qa_test_engineer": {
+    "calendar": "AGT_QA_ENG_TOKEN_V1",
+    "csm": "",
+    "drive": "AGT_QA_ENG_TOKEN_V1",
+    "email": "AGT_QA_ENG_TOKEN_V1",
+    "gitea": "AGT_QA_ENG_TOKEN_V1",
+    "hr": "",
+    "itsm": "",
+    "teams": "AGT_QA_ENG_TOKEN_V1"
+  },
+  "finance_approval_specialist": {
+    "calendar": "",
+    "csm": "",
+    "drive": "",
+    "email": "",
+    "gitea": "",
+    "hr": "",
+    "itsm": "",
+    "teams": ""
+  },
+  "legal_approval_specialist": {
+    "calendar": "",
+    "csm": "",
+    "drive": "",
+    "email": "",
+    "gitea": "",
+    "hr": "",
+    "itsm": "",
+    "teams": ""
+  },
+  "procurement_approval_specialist": {
+    "calendar": "",
+    "csm": "",
+    "drive": "",
+    "email": "",
+    "gitea": "",
+    "hr": "",
+    "itsm": "",
+    "teams": ""
+  }
+}
