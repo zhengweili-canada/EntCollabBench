@@ -29,7 +29,7 @@ python3 --version
 If the repository has not been cloned yet:
 
 ```bash
-git clone ...
+git clone https://github.com/yutao1024/EntCollabBench
 ```
 
 
