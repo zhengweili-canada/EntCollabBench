@@ -30,6 +30,7 @@ If the repository has not been cloned yet:
 
 ```bash
 git clone https://github.com/yutao1024/EntCollabBench
+cd EntCollabBench
 ```
 
 
@@ -59,9 +60,9 @@ export NO_PROXY=localhost,127.0.0.1,host.docker.internal,redis,agent-it-service-
 export no_proxy=localhost,127.0.0.1,host.docker.internal,redis,agent-it-service-desk-l1,agent-hr-service-specialist,agent-it-change-engineer,agent-customer-support-specialist,agent-knowledge-base-specialist,agent-collaboration-ops-specialist,agent-developer-engineer,agent-qa-test-engineer,agent-finance-approval-specialist,agent-legal-approval-specialist,agent-procurement-approval-specialist
 
 export OPENAI_API_KEY=your_model_service_api_key
-export OPENAI_BASE_URL=https://openrouter.ai/api/v1
-export AGENT_LLM_MODEL=anthropic/claude-sonnet-4.6
-export AGENT_SUMMARY_MODEL=anthropic/claude-sonnet-4.6
+export OPENAI_BASE_URL=https://<api base url>/v1
+export AGENT_LLM_MODEL=<model name>
+export AGENT_SUMMARY_MODEL=<model name>
 export TASK_TIMEOUT_SECONDS=1000
 export AGENT_HTTP_TIMEOUT_SECONDS=400
 ```
@@ -172,8 +173,8 @@ unset HTTP_PROXY HTTPS_PROXY ALL_PROXY http_proxy https_proxy all_proxy
 # export https_proxy=http://..
 
 export JUDGE_OPENAI_API_KEY=your_judge_api_key
-export JUDGE_OPENAI_BASE_URL=https://openrouter.ai/api/v1
-export JUDGE_MODELS=google/gemini-3.1-pro-preview
+export JUDGE_OPENAI_BASE_URL=https://<api base url>/v1
+export JUDGE_MODELS=<model name>
 export JUDGE_TIMEOUT_SECONDS=500
 ```
 
@@ -208,5 +209,15 @@ Argument summary:
 ## Citation
 
 If you use EntCollabBench in your research, please cite:
+
+@misc{yu2026allinoneagentbenchmarkingrolespecialized,
+      title={Beyond the All-in-One Agent: Benchmarking Role-Specialized Multi-Agent Collaboration in Enterprise Workflows}, 
+      author={Tao Yu and Hao Wang and Changyu Li and Shenghua Chai and Minghui Zhang and Zhongtian Luo and Yuxuan Zhou and Haopeng Jin and Zhaolu Kang and Jiabing Yang and YiFan Zhang and Xinming Wang and Hongzhu Yi and Zheqi He and Jing-Shu Zheng and Xi Yang and Yan Huang and Liang Wang},
+      year={2026},
+      eprint={2605.08761},
+      archivePrefix={arXiv},
+      primaryClass={cs.MA},
+      url={https://arxiv.org/abs/2605.08761}, 
+}
 
 []()
