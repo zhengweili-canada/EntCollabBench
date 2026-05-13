@@ -8,7 +8,7 @@
 
   ✨ **A benchmark for enterprise collaborative agent systems across realistic workflows, tools, and approval processes** ✨
 
-  | 🏢 **Enterprise Workflows** | 🤝 **Peer-to-Peer Multi-Agent Collaboration** | 🛠️ **MCP-Based Tool Execution** | ✅ **Approval-Oriented Decision Making** |
+  | 🏢 **Enterprise Workflows** | 🤝 **Peer-to-Peer Multi-Agent Collaboration** | 🛠️ **MCP-Based Tool Execution** |    ✅ **Approval-Oriented Decision Making** |
 </div>
 
 ## 📑 Table of Contents
