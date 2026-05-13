@@ -1,10 +1,43 @@
-# EntCollabBench
+<div align="center">
+  <img width="800" alt="overview" src="asset/title.png" />
+  <br/>
 
-![Overview](asset/overview.png)
+  [![GitHub Repo](https://img.shields.io/badge/GitHub-EntCollabBench-24292F?style=flat-square&logo=github&logoColor=white)](https://github.com/yutao1024/EntCollabBench)
+  [![arXiv](https://img.shields.io/badge/arXiv-2605.08761-B31B1B?style=flat-square&logo=arxiv&logoColor=white)](https://arxiv.org/abs/2605.08761)
+  [![Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Dataset-orange)](https://huggingface.co/datasets/Kirito-Lab/EntCollabBench)
+
+  ✨ **A benchmark for enterprise collaborative agent systems across realistic workflows, tools, and approval processes** ✨
+
+  | 🏢 **Enterprise Workflows** | 🤝 **Peer-to-Peer Multi-Agent Collaboration** | 🛠️ **MCP-Based Tool Execution** | ✅ **Approval-Oriented Decision Making** |
+</div>
+
+## 📑 Table of Contents
+
+<div align='center'>
+
+[🔥 News](#-news) | [🌈 Overview](#-overview) | [🤗 Dataset](#-dataset) | [🚀 Quick Start](#quick-start) | [📖 Citation](#citation)
+
+</div>
+
+## 🔥 News
+
+- EntCollabBench is available on [Hugging Face](https://huggingface.co/datasets/Kirito-Lab/EntCollabBench).
+- The EntCollabBench paper, [Beyond the All-in-One Agent: Benchmarking Role-Specialized Multi-Agent Collaboration in Enterprise Workflows](https://arxiv.org/abs/2605.08761), is available on arXiv.
+
+## 🌈 Overview
+
+<div align="center">
+  <img width="800" alt="overview" src="asset/overview.png" />
+</div>
+<br/>
 
 EntCollabBench is a benchmark for enterprise collaborative agent systems. It is designed to evaluate how multiple agents coordinate across realistic enterprise workflows, tools, and approval processes, covering scenarios such as MCP-based task execution, multi-agent collaboration, and approval-oriented decision making.
 
 This README provides a quick start guide for bringing up the Arena services, agent services, and benchmark pipeline on a single machine.
+
+## 🤗 Dataset
+
+Access the EntCollabBench dataset on Hugging Face: [Kirito-Lab/EntCollabBench](https://huggingface.co/datasets/Kirito-Lab/EntCollabBench).
 
 ## Quick Start
 
@@ -210,6 +243,7 @@ Argument summary:
 
 If you use EntCollabBench in your research, please cite:
 
+```bibtex
 @misc{yu2026allinoneagentbenchmarkingrolespecialized,
       title={Beyond the All-in-One Agent: Benchmarking Role-Specialized Multi-Agent Collaboration in Enterprise Workflows}, 
       author={Tao Yu and Hao Wang and Changyu Li and Shenghua Chai and Minghui Zhang and Zhongtian Luo and Yuxuan Zhou and Haopeng Jin and Zhaolu Kang and Jiabing Yang and YiFan Zhang and Xinming Wang and Hongzhu Yi and Zheqi He and Jing-Shu Zheng and Xi Yang and Yan Huang and Liang Wang},
@@ -219,5 +253,4 @@ If you use EntCollabBench in your research, please cite:
       primaryClass={cs.MA},
       url={https://arxiv.org/abs/2605.08761}, 
 }
-
-[]()
+```
