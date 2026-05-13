@@ -21,8 +21,9 @@
 
 ## 🔥 News
 
-- EntCollabBench is available on [Hugging Face](https://huggingface.co/datasets/Kirito-Lab/EntCollabBench).
-- The EntCollabBench paper, [Beyond the All-in-One Agent: Benchmarking Role-Specialized Multi-Agent Collaboration in Enterprise Workflows](https://arxiv.org/abs/2605.08761), is available on arXiv.
+**[2026/05/12]** EntCollabBench is available on [Hugging Face](https://huggingface.co/datasets/Kirito-Lab/EntCollabBench).
+
+**[2026/05/09]** The EntCollabBench paper, [Beyond the All-in-One Agent: Benchmarking Role-Specialized Multi-Agent Collaboration in Enterprise Workflows](https://arxiv.org/abs/2605.08761), is available on arXiv.
 
 ## 🌈 Overview
 
