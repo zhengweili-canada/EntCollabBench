@@ -1,7 +1,5 @@
 __pycache__/
-Arena/mcp-gitea/
 .env
-agent/.env
 vllm/models
 scripts/result/traj
 
