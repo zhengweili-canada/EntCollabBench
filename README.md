@@ -168,7 +168,7 @@ If your local checkout already contains the required seed SQL files, you can ski
 
 #### 6.2 Built-in Datasets
 
-The datasets can be downloaded from Hugging Face. Includes these task files:
+The datasets are built into this repository. Includes these task files:
 
 - `scripts/dataset/mcp_tasks_160.json`
 - `scripts/dataset/mcp_multi_tasks_40.json`
