@@ -166,7 +166,7 @@ They are placed in the corresponding `Arena/seed/*/dbs/` directories in this rep
 
 If your local checkout already contains the required seed SQL files, you can skip this step.
 
-#### 6.2 Built-in Datasets
+#### 6.2 Download Datasets
 
 The datasets can be downloaded from Hugging Face. Includes these task files:
 
