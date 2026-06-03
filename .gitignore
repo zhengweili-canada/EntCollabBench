@@ -3,4 +3,9 @@ vllm/models
 scripts/result/traj
 
 scripts/.env.example
-scripts/.env.example
+
+.env
+results/
+
+# Mac specific
+.DS_Store
