@@ -6,6 +6,7 @@ scripts/.env.example
 
 .env
 results/
+scripts/dataset/
 
 # Mac specific
 .DS_Store
