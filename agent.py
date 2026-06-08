@@ -54,9 +54,10 @@ logger = logging.getLogger("company_agent")
 
 # ── Verification pipeline (Stage 2 & Stage 5) ─────────────────────────────────
 # Controlled entirely by VERIFICATION_MODE env var — no code changes needed.
-#   VERIFICATION_MODE=baseline        -> no intervention   (Phase 1)
-#   VERIFICATION_MODE=stage2          -> Stage 2 only      (Phase 2)
-#   VERIFICATION_MODE=stage2_stage5   -> Stage 2 + Stage 5 (Phase 3)
+#   VERIFICATION_MODE=baseline        -> no intervention        (Phase 1)
+#   VERIFICATION_MODE=stage2          -> Stage 2 only            (Phase 2)
+#   VERIFICATION_MODE=stage2_stage5   -> Stage 2 + Stage 5       (Phase 3)
+#   VERIFICATION_MODE=stage5_only     -> Stage 5 only, no Stage 2 (Phase 4)
 try:
     from my_verification.verification_pipeline import (
         check_stage2,
