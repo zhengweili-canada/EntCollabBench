@@ -51,6 +51,28 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
 )
 logger = logging.getLogger("company_agent")
+
+# ── Verification pipeline (Stage 2 & Stage 5) ─────────────────────────────────
+# Controlled entirely by VERIFICATION_MODE env var — no code changes needed.
+#   VERIFICATION_MODE=baseline        -> no intervention   (Phase 1)
+#   VERIFICATION_MODE=stage2          -> Stage 2 only      (Phase 2)
+#   VERIFICATION_MODE=stage2_stage5   -> Stage 2 + Stage 5 (Phase 3)
+try:
+    from my_verification.verification_pipeline import (
+        check_stage2,
+        check_stage5,
+        get_metrics_summary,
+        VERIFICATION_MODE as _VERIFICATION_MODE,
+    )
+    logger.info("[verification] loaded from my_verification.verification_pipeline mode=%s", _VERIFICATION_MODE)
+except ImportError:
+    # Fallback: my_verification not on path — run as baseline silently
+    def check_stage2(*a, **kw): return None
+    def check_stage5(*a, **kw): return None
+    def get_metrics_summary(): return {"verification_mode": "baseline (import failed)"}
+    _VERIFICATION_MODE = "baseline"
+    logger.warning("[verification] my_verification.verification_pipeline not found — running as baseline")
+
 SCHEMA_TOOL_NAME_RE = re.compile(r"^mcp_[a-z0-9_]+_(list_tools|get_tool_schema)$")
 WORKSPACE_READ_TOOL_NAME_RE = re.compile(r"(^|[_\.])workspace_read_file$")
 
@@ -737,6 +759,17 @@ class AgentRuntime:
                     "benchmark_server_allowlist"
                 )
 
+            # ── Stage 2: Pre-Delegation Check ──────────────────────────────
+            # Delegates to my_verification/verification_pipeline.py for all logic.
+            _s2_error = check_stage2(
+                task_description=task_description,
+                target_agent=target_agent_name,
+                from_agent=self.agent_name,
+            )
+            if _s2_error:
+                return _s2_error
+            # ───────────────────────────────────────────────────────────────
+
             try:
                 self._append_session_event(
                     session_id=context.session_id,
@@ -828,6 +861,27 @@ class AgentRuntime:
                     "result_preview": self._clip(parsed.result),
                 },
             )
+
+            # ── Stage 5: Post-Generation Audit ─────────────────────────────
+            # Count tool_call trace events to detect silent 0-tool responses.
+            # Delegates to my_verification/verification_pipeline.py for all logic.
+            with self._event_log_lock:
+                _session_events = list(self.session_event_log.get(context.session_id, []))
+            _trace_event_count = sum(
+                1 for ev in _session_events
+                if ev.get("event") == "tool_call"
+                and ev.get("request_id") == context.request_id
+            )
+            _s5_error = check_stage5(
+                result=parsed.result,
+                agent_name=self.agent_name,
+                target_agent=target_agent_name,
+                trace_event_count=_trace_event_count,
+            )
+            if _s5_error:
+                return _s5_error
+            # ───────────────────────────────────────────────────────────────
+
             return parsed.result
 
         delegation_tool.__name__ = f"ask_{target_agent_name}_by_http"
