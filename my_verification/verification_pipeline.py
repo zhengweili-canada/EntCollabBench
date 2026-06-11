@@ -12,6 +12,16 @@ Imported by agent.py; controlled via VERIFICATION_MODE env var:
     VERIFICATION_MODE=stage2_stage5   -> Stage 2 + Stage 5       (Phase 3)
     VERIFICATION_MODE=stage5_only     -> Stage 5 only, no Stage 2 (Phase 4)
 
+Changelog v3 (2026-06-11):
+  Stage 5: Critical bug fix — Check 1 (zero-trace) and Check 2 (skip-phrase)
+           were checking target_agent (the NEXT agent to be called) instead of
+           agent_name (the CURRENT agent producing output). This meant KB
+           specialist and it_service_desk_l1 zero-trace failures were never
+           caught because Stage 5 was looking for their names in the outbound
+           delegation target, not in the agent doing the failing. Fixed both
+           checks to use agent_name. Expected impact: recover up to 27
+           additional KB specialist zero-trace failures on 160 tasks.
+
 Changelog v2 (2026-06-07):
   Stage 2: Removed mandatory regex pattern checks. Keyword-only check now
            applies to all agents. Pattern check is advisory (logged) but
@@ -150,7 +160,9 @@ ZERO_TRACE_AGENTS: List[str] = [
 # Rationale: if an agent made 10+ tool calls AND said "no update needed",
 # it likely did real work and used that phrase in its summary. If it made
 # 0-2 tool calls AND said "no update needed", it almost certainly skipped.
-SKIP_PHRASE_MAX_TRACE_FOR_BLOCK: int = 2
+# Only flag an agent as silently skipping if it both said 'nothing to do' AND 
+# actually did nothing at all."
+SKIP_PHRASE_MAX_TRACE_FOR_BLOCK: int = 0
 
 
 # ── Stage 2 ───────────────────────────────────────────────────────────────────
@@ -250,21 +262,26 @@ def check_stage5(
     result_lower = result.lower()
 
     # Check 1: zero tool calls — restricted to confirmed silent-failure agents
-    if target_agent in ZERO_TRACE_AGENTS and trace_event_count == 0:
+    # NOTE: checks agent_name (the CURRENT agent producing output), not
+    # target_agent (the NEXT agent to be called). KB specialist and
+    # it_service_desk_l1 fail silently themselves — they are not caught
+    # by checking who they delegate to.
+    if agent_name in ZERO_TRACE_AGENTS and trace_event_count == 0:
         logger.warning(
             "[stage5] stage5_blocked (0 trace events) agent=%s target=%s",
             agent_name, target_agent,
         )
         stage5_metrics.record(
-            target_agent=target_agent, blocked=True, reason="zero_trace"
+            target_agent=agent_name, blocked=True, reason="zero_trace"
         )
         return (
-            f"Error: '{target_agent}' completed with 0 tool calls. "
+            f"Error: '{agent_name}' completed with 0 tool calls. "
             "The agent may have incorrectly decided no action was needed. "
             "Please retry and ensure the required updates are actually applied."
         )
 
     # Check 2: skip-phrase detection — ONLY fires if trace count is also low
+    # NOTE: also uses agent_name (current agent) not target_agent (next agent)
     for phrase in SKIP_PHRASES:
         if phrase in result_lower:
             if trace_event_count <= SKIP_PHRASE_MAX_TRACE_FOR_BLOCK:
@@ -273,7 +290,7 @@ def check_stage5(
                     phrase, trace_event_count, agent_name, target_agent,
                 )
                 stage5_metrics.record(
-                    target_agent=target_agent,
+                    target_agent=agent_name,
                     blocked=True,
                     reason=f"skip_phrase:{phrase}",
                 )
