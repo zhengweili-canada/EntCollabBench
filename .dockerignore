@@ -6,6 +6,8 @@
 !session_store.py
 !tool/
 !tool/**
+!my_verification/
+!my_verification/**
 !local_data/
 !local_data/**
 

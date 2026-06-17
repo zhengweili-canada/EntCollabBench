@@ -2,10 +2,27 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 from langchain_core.tools import tool
 
 from tool.tool_executor import ToolExecutionError, execute_tool
 from tool.mcp_bridge import MCP_SERVER_PORTS
+
+
+def _get_container_agent_name() -> str:
+    """
+    Read agent name from --agent-name CLI argument or AGENT_NAME env var.
+    Each container runs: python agent.py --agent-name {name} --port {port}
+    """
+    # Try CLI args first (most reliable)
+    args = sys.argv
+    for i, arg in enumerate(args):
+        if arg == "--agent-name" and i + 1 < len(args):
+            return args[i + 1].strip()
+    # Fallback to env var
+    return os.getenv("AGENT_NAME", "").strip()
+
+_CONTAINER_AGENT_NAME: str = _get_container_agent_name() 
 
 
 def _schema_context_mode() -> str:
@@ -226,9 +243,29 @@ def _make_mcp_get_tool_schema_tool(server: str):
     )
     return tool(_mcp_get_tool_schema)
 
-
 def _make_mcp_call_tool(server: str):
     def _mcp_call_tool(tool_name: str, arguments_json: str = "{}", database_id: str = "") -> str:
+        # ── Stage 3: Capability-Scoped Access ──────────────────────────────
+        # Check authorization BEFORE the tool call reaches the MCP server.
+        # server is captured from outer closure (e.g. "email", "itsm").
+        # agent_name comes from tool runtime context set at request time.
+        try:
+            from my_verification.verification_pipeline import check_stage3
+            from tool.tool_executor import _get_tool_runtime_context
+            ctx = _get_tool_runtime_context()
+            agent_name = ctx.get("agent_name", "") or _CONTAINER_AGENT_NAME
+            if agent_name:
+                full_tool_name = f"mcp_{server}_{tool_name}"
+                _s3_error = check_stage3(
+                    agent_name=agent_name,
+                    tool_name=full_tool_name,
+                )
+                if _s3_error:
+                    return _s3_error
+        except Exception:
+            pass  # fail open — never break execution due to Stage 3
+        # ───────────────────────────────────────────────────────────────────
+
         try:
             args = json.loads(arguments_json)
             if not isinstance(args, dict):
@@ -247,14 +284,12 @@ def _make_mcp_call_tool(server: str):
             return f"Tool error: invalid arguments_json: {exc}"
         except ToolExecutionError as exc:
             return f"Tool error: {exc}"
-
     _mcp_call_tool.__name__ = f"mcp_{server}_call_tool"
     _mcp_call_tool.__doc__ = (
         f"Call a tool on MCP server '{server}'. "
         "Pass MCP tool name and arguments_json."
     )
     return tool(_mcp_call_tool)
-
 
 def _make_mcp_knowledge_call_tool(server: str):
     def _mcp_call_knowledge_tool(tool_name: str, arguments_json: str = "{}", database_id: str = "") -> str:

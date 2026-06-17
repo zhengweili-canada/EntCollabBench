@@ -52,6 +52,7 @@ RUN python -m pip install --no-cache-dir --upgrade \
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
 COPY agent.py /app/agent.py
+COPY my_verification /app/my_verification
 COPY api_schema.py /app/api_schema.py
 COPY session_store.py /app/session_store.py
 COPY tool /app/tool

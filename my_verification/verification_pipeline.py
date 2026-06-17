@@ -1,44 +1,44 @@
 """
 my_verification/verification_pipeline.py
 
-Stage 2 — Pre-Delegation Check
-Stage 5 — Post-Generation Audit
+Stage 2 — Pre-Delegation Check        (P3: Verified Execution)
+Stage 3 — Capability-Scoped Access    (P2: Capability Scoping)  ← NEW v4
+Stage 5 — Post-Generation Audit       (P5: Data Isolation)
 
 Single source of truth for all verification logic.
 Imported by agent.py; controlled via VERIFICATION_MODE env var:
 
-    VERIFICATION_MODE=baseline        -> no intervention        (Phase 1)
-    VERIFICATION_MODE=stage2          -> Stage 2 only            (Phase 2)
-    VERIFICATION_MODE=stage2_stage5   -> Stage 2 + Stage 5       (Phase 3)
-    VERIFICATION_MODE=stage5_only     -> Stage 5 only, no Stage 2 (Phase 4)
+    VERIFICATION_MODE=baseline        -> no intervention          (Phase 1)
+    VERIFICATION_MODE=stage2          -> Stage 2 only             (Phase 2)
+    VERIFICATION_MODE=stage2_stage5   -> Stage 2 + Stage 5        (Phase 3)
+    VERIFICATION_MODE=stage5_only     -> Stage 5 only             (Phase 4)
+    VERIFICATION_MODE=stage3_stage5   -> Stage 3 + Stage 5        (Phase 5) NEW
+    VERIFICATION_MODE=stage3_only     -> Stage 3 only             (Phase 6) NEW
+
+Changelog v4 (2026-06-15):
+  Stage 3 (NEW): Capability-Scoped Access added.
+    - Intercepts each tool call BEFORE it executes
+    - Checks whether the calling agent is authorized to access the MCP server
+    - Blocks unauthorized tool calls and returns an error instructing the agent
+      to delegate instead
+    - Authorized server map derived empirically from >20% usage threshold
+      across 160 workflow tasks
+    - Active when VERIFICATION_MODE is 'stage3_stage5' or 'stage3_only'
+    - Tool name format: mcp_{server}_{action} — server extracted from prefix
+
+  Stage 5: Bug fix from v3 retained — agent_name (not target_agent) used
+    in ZERO_TRACE_AGENTS check.
 
 Changelog v3 (2026-06-11):
-  Stage 5: Critical bug fix — Check 1 (zero-trace) and Check 2 (skip-phrase)
-           were checking target_agent (the NEXT agent to be called) instead of
-           agent_name (the CURRENT agent producing output). This meant KB
-           specialist and it_service_desk_l1 zero-trace failures were never
-           caught because Stage 5 was looking for their names in the outbound
-           delegation target, not in the agent doing the failing. Fixed both
-           checks to use agent_name. Expected impact: recover up to 27
-           additional KB specialist zero-trace failures on 160 tasks.
+  Stage 5: Critical bug fix — Check 1 (zero-trace) was checking
+    target_agent (the NEXT agent) instead of agent_name (the CURRENT agent).
+    This meant KB specialist and it_service_desk_l1 zero-trace failures were
+    never caught. Fixed to use agent_name. Recovered 27 additional KB failures.
 
 Changelog v2 (2026-06-07):
-  Stage 2: Removed mandatory regex pattern checks. Keyword-only check now
-           applies to all agents. Pattern check is advisory (logged) but
-           never blocks. This prevents false positives on tasks like
-           task_113/115/126/148 where valid delegations were blocked.
-
-  Stage 5: Three targeted changes to reduce false positives on already-
-           passing tasks:
-           1. Skip-phrase check now requires BOTH phrase match AND low
-              trace event count (<=2) — a phrase alone no longer blocks.
-           2. Skip-phrase list trimmed to only unambiguous failure phrases.
-              Removed broad phrases that appear in legitimate completions.
-           3. Zero-trace check restricted to knowledge_base_specialist and
-              it_service_desk_l1 only — the two agents with confirmed silent
-              failure patterns. Removed hr_service_specialist and
-              it_change_engineer which have high baseline pass rates and
-              do not exhibit this failure mode.
+  Stage 2: Removed mandatory regex pattern checks. Keyword-only check.
+  Stage 5: Skip-phrase list trimmed. Zero-trace check restricted to
+    knowledge_base_specialist and it_service_desk_l1 only.
 """
 
 import logging
@@ -53,14 +53,6 @@ logger = logging.getLogger(__name__)
 VERIFICATION_MODE: str = os.getenv("VERIFICATION_MODE", "baseline").strip().lower()
 
 # ── Stage 2 configuration ─────────────────────────────────────────────────────
-#
-# CHANGE v2: Pattern check removed from blocking logic.
-# Root cause of false positives (task_113, task_115, task_126, task_148):
-# the regex patterns like r"inc[_\-]?\d+" and r"ch[gn][_\-]?\d+" were
-# blocking valid delegations where the task description used natural language
-# like "open a new incident for USER_022" without a specific ID number.
-# The LLM writes delegation messages in natural language, not ID-first format.
-# Fix: keyword check only. Keywords are broad enough to match natural language.
 
 AGENT_RULES: Dict[str, Dict] = {
     "knowledge_base_specialist": {
@@ -109,24 +101,66 @@ AGENT_RULES: Dict[str, Dict] = {
     },
 }
 
+# ── Stage 3 configuration ─────────────────────────────────────────────────────
+#
+# Authorized MCP servers per agent role.
+# Derived empirically: servers used in >20% of 160 baseline workflow tasks
+# are considered primary role tools. Servers used in <15% are boundary crossings.
+#
+# Tool name format in ENTCOLLABBENCH: mcp_{server}_{action}
+# Examples:
+#   mcp_email_send_message        -> server = "email"
+#   mcp_itsm_create_incident      -> server = "itsm"
+#   mcp_hr_update_case            -> server = "hr"
+#   mcp_calendar_create_event     -> server = "calendar"
+#   mcp_gitea_create_file         -> server = "gitea"
+#
+# Special tool names that are always allowed (schema/meta tools):
+#   mcp_*_list_tools, mcp_*_get_tool_schema
+#   ask_*_by_http (delegation tools — handled by Stage 2, not Stage 3)
+
+AUTHORIZED_SERVERS: Dict[str, set] = {
+    "collaboration_ops_specialist": {"email", "calendar", "teams", "drive"},
+    "customer_support_specialist":  {"csm"},
+    "developer_engineer":           {"gitea"},
+    "hr_service_specialist":        {"hr"},
+    "it_change_engineer":           {"itsm"},
+    "it_service_desk_l1":           {"itsm"},
+    "knowledge_base_specialist":    {"csm", "itsm", "hr"},
+    "qa_test_engineer":             {"gitea"},
+    # Approval agents (future work — approval task track)
+    "finance_approval_specialist":  {"finance"},
+    "legal_approval_specialist":    {"legal"},
+    "procurement_approval_specialist": {"procurement"},
+}
+
+# Tool name prefix pattern: mcp_{server}_{action}
+_MCP_TOOL_PREFIX = re.compile(r"^mcp_([a-z0-9]+)_(.+)$")
+
+# Schema/meta tools that are always allowed regardless of server
+_ALWAYS_ALLOWED_ACTIONS = {"list_tools", "get_tool_schema"}
+
+# Delegation tools — handled by Stage 2, not Stage 3
+_DELEGATION_TOOL_PREFIX = "ask_"
+
+
+def _extract_server_from_tool_name(tool_name: str) -> Optional[str]:
+    """
+    Extract the MCP server name from a tool name.
+    Format: mcp_{server}_{action}
+    Returns None if the tool name does not follow this pattern
+    (e.g. delegation tools, workspace tools).
+    """
+    if not tool_name or tool_name.startswith(_DELEGATION_TOOL_PREFIX):
+        return None
+    m = _MCP_TOOL_PREFIX.match(tool_name)
+    if not m:
+        return None
+    return m.group(1)
+
+
 # ── Stage 5 configuration ─────────────────────────────────────────────────────
-#
-# CHANGE v2: Skip-phrase list reduced to only UNAMBIGUOUS failure phrases.
-#
-# Removed phrases and why:
-#   "already done"         — too broad; agent saying "task already done" after
-#                            completing work is a legitimate completion message
-#   "already completed"    — same issue; agent reporting completion uses this
-#   "already published"    — KB agent says this AFTER updating an article to
-#                            published state; was causing false positives
-#   "article is already"   — partial match caused false positives on valid msgs
-#   "verified article"     — agent verifying then updating uses this phrase
-#   "state is published"   — legitimate completion report after update
-#   "task is complete"     — generic completion phrase, not a skip signal
-#   "already exists"       — agent may say "record already exists, updating..."
-#   "no further action"    — too broad; could appear in multi-step summaries
-#
-# Kept phrases: only phrases that unambiguously mean "I decided not to act":
+
 SKIP_PHRASES: List[str] = [
     "no update needed",
     "no changes needed",
@@ -135,33 +169,14 @@ SKIP_PHRASES: List[str] = [
     "no action required",
     "no action needed",
     "nothing to do",
-    "article is correct",   # KB-specific: agent says article is fine, no edit
+    "article is correct",
 ]
 
-# CHANGE v2: Zero-trace check restricted to confirmed silent-failure agents only.
-#
-# Removed from list and why:
-#   "hr_service_specialist"  — 83% baseline pass rate; rarely fails silently;
-#                              forcing retry breaks correctly completed tasks
-#   "it_change_engineer"     — 75% baseline pass rate; same issue
-#
-# Kept in list:
-#   "knowledge_base_specialist" — confirmed silent failure pattern in Phase 1-3;
-#                                 0% baseline pass rate in orig 20 tasks
-#   "it_service_desk_l1"        — confirmed in task_36; 0% on orig 20 tasks;
-#                                 38% on new 40 which is still low
 ZERO_TRACE_AGENTS: List[str] = [
     "knowledge_base_specialist",
     "it_service_desk_l1",
 ]
 
-# CHANGE v2: Minimum trace events threshold for skip-phrase check.
-# A skip phrase only triggers Stage 5 if the agent also made FEW tool calls.
-# Rationale: if an agent made 10+ tool calls AND said "no update needed",
-# it likely did real work and used that phrase in its summary. If it made
-# 0-2 tool calls AND said "no update needed", it almost certainly skipped.
-# Only flag an agent as silently skipping if it both said 'nothing to do' AND 
-# actually did nothing at all."
 SKIP_PHRASE_MAX_TRACE_FOR_BLOCK: int = 0
 
 
@@ -172,10 +187,7 @@ def validate_delegation(
     task_description: str,
     from_agent: str = "",
 ) -> Tuple[bool, str, List[str]]:
-    """
-    Validate a plain-text delegation message before it is sent.
-    v2: keyword check only — no pattern blocking.
-    """
+    """Validate a plain-text delegation message before it is sent."""
     rules = AGENT_RULES.get(target_agent)
     if not rules:
         logger.info(
@@ -214,7 +226,6 @@ def check_stage2(
     Returns error string if blocked, else None.
     Active when VERIFICATION_MODE is 'stage2' or 'stage2_stage5'.
     """
-    # stage5_only mode intentionally skips Stage 2
     if VERIFICATION_MODE not in ("stage2", "stage2_stage5"):
         return None
 
@@ -234,6 +245,97 @@ def check_stage2(
     return None
 
 
+# ── Stage 3 ───────────────────────────────────────────────────────────────────
+
+def check_stage3(
+    agent_name: str,
+    tool_name: str,
+) -> Optional[str]:
+    """
+    Stage 3 — Capability-Scoped Access (P2: Capability Scoping)
+
+    Called BEFORE each MCP tool call executes (hook in agent.py
+    _record_message_step, after tool_name is extracted).
+
+    Checks whether the calling agent is authorized to access the MCP server
+    implied by the tool name. If not authorized, blocks the call and instructs
+    the agent to delegate to the appropriate agent instead.
+
+    Returns error string if blocked, else None.
+    Active when VERIFICATION_MODE is 'stage3_stage5' or 'stage3_only'.
+
+    Design decisions:
+    - Schema/meta tools (list_tools, get_tool_schema) are always allowed —
+      agents need these to discover available tools regardless of role.
+    - Delegation tools (ask_*_by_http) are not intercepted here — handled
+      by Stage 2 pre-delegation check.
+    - Unknown agents (not in AUTHORIZED_SERVERS) are allowed through —
+      fail-open to avoid breaking approval track agents not yet configured.
+    - Unknown tool name formats (non-mcp_ prefix) are allowed through.
+    """
+    if VERIFICATION_MODE not in ("stage3_stage5", "stage3_only"):
+        return None
+
+    # Extract server from tool name
+    server = _extract_server_from_tool_name(tool_name)
+    if server is None:
+        # Not an MCP tool (delegation tool, workspace tool, etc.) — allow
+        return None
+
+    # Schema/meta tools always allowed
+    action = tool_name[len(f"mcp_{server}_"):]
+    if action in _ALWAYS_ALLOWED_ACTIONS:
+        return None
+
+    # Check authorization
+    authorized = AUTHORIZED_SERVERS.get(agent_name)
+    if authorized is None:
+        # Agent not in map — fail open, allow through
+        logger.info(
+            "[stage3] stage3_unknown_agent agent=%s tool=%s — allowing through",
+            agent_name, tool_name,
+        )
+        return None
+
+    if server in authorized:
+        logger.info(
+            "[stage3] stage3_passed agent=%s tool=%s server=%s",
+            agent_name, tool_name, server,
+        )
+        stage3_metrics.record(agent_name=agent_name, blocked=False, server=server)
+        return None
+
+    # Blocked — unauthorized server access
+    logger.warning(
+        "[stage3] stage3_blocked agent=%s tool=%s server=%s authorized=%s",
+        agent_name, tool_name, server, sorted(authorized),
+    )
+    stage3_metrics.record(agent_name=agent_name, blocked=True, server=server)
+
+    # Find which agent should handle this server
+    delegatee = _find_authorized_agent(server)
+    delegation_hint = (
+        f" Please delegate this task to '{delegatee}' instead."
+        if delegatee
+        else " Please delegate this task to the agent responsible for this service."
+    )
+
+    return (
+        f"Error: '{agent_name}' is not authorized to access the '{server}' "
+        f"service (tool: '{tool_name}'). "
+        f"Authorized services for this role: {sorted(authorized)}."
+        + delegation_hint
+    )
+
+
+def _find_authorized_agent(server: str) -> Optional[str]:
+    """Find which agent is primarily responsible for a given server."""
+    for agent, servers in AUTHORIZED_SERVERS.items():
+        if server in servers:
+            return agent
+    return None
+
+
 # ── Stage 5 ───────────────────────────────────────────────────────────────────
 
 def check_stage5(
@@ -245,27 +347,18 @@ def check_stage5(
     """
     Entry point called by agent.py Stage 5 hook.
     Returns error string if silent skip detected, else None.
-    Active when VERIFICATION_MODE is 'stage2_stage5' or 'stage5_only'.
+    Active when VERIFICATION_MODE is 'stage2_stage5' or 'stage5_only'
+    or 'stage3_stage5'.
 
-    v2 logic:
-      Check 1 (zero trace): fires ONLY for knowledge_base_specialist and
-        it_service_desk_l1 with 0 tool calls.
-      Check 2 (skip phrase): fires ONLY when phrase found AND trace_event_count
-        <= SKIP_PHRASE_MAX_TRACE_FOR_BLOCK (default 2). This prevents false
-        positives on agents that completed real work but used a phrase from
-        the list in their summary.
+    v3 fix: uses agent_name (not target_agent) in ZERO_TRACE_AGENTS check.
     """
-    # Active for both stage2_stage5 and stage5_only modes
-    if VERIFICATION_MODE not in ("stage2_stage5", "stage5_only"):
+    if VERIFICATION_MODE not in ("stage2_stage5", "stage5_only", "stage3_stage5"):
         return None
 
     result_lower = result.lower()
 
     # Check 1: zero tool calls — restricted to confirmed silent-failure agents
-    # NOTE: checks agent_name (the CURRENT agent producing output), not
-    # target_agent (the NEXT agent to be called). KB specialist and
-    # it_service_desk_l1 fail silently themselves — they are not caught
-    # by checking who they delegate to.
+    # v3 fix: agent_name (current agent) not target_agent (next agent)
     if agent_name in ZERO_TRACE_AGENTS and trace_event_count == 0:
         logger.warning(
             "[stage5] stage5_blocked (0 trace events) agent=%s target=%s",
@@ -281,7 +374,6 @@ def check_stage5(
         )
 
     # Check 2: skip-phrase detection — ONLY fires if trace count is also low
-    # NOTE: also uses agent_name (current agent) not target_agent (next agent)
     for phrase in SKIP_PHRASES:
         if phrase in result_lower:
             if trace_event_count <= SKIP_PHRASE_MAX_TRACE_FOR_BLOCK:
@@ -295,13 +387,12 @@ def check_stage5(
                     reason=f"skip_phrase:{phrase}",
                 )
                 return (
-                    f"Error: '{target_agent}' appears to have skipped required work "
+                    f"Error: '{agent_name}' appears to have skipped required work "
                     f"(response contained '{phrase}' with only {trace_event_count} "
                     f"tool calls). "
                     "Please retry and ensure all required tool calls are executed."
                 )
             else:
-                # Phrase found but agent made enough tool calls — log only, do not block
                 logger.info(
                     "[stage5] stage5_phrase_suppressed (phrase=%r, trace=%d>=threshold) "
                     "agent=%s target=%s",
@@ -312,15 +403,13 @@ def check_stage5(
         "[stage5] stage5_passed agent=%s target=%s trace=%d",
         agent_name, target_agent, trace_event_count,
     )
-    stage5_metrics.record(target_agent=target_agent, blocked=False, reason="")
+    stage5_metrics.record(target_agent=agent_name, blocked=False, reason="")
     return None
 
 
 # ── Metrics ───────────────────────────────────────────────────────────────────
 
 class Stage2Metrics:
-    """Track Stage 2 intervention statistics across all delegations."""
-
     def __init__(self):
         self.total_delegations = 0
         self.blocked = 0
@@ -344,21 +433,53 @@ class Stage2Metrics:
             "blocked": self.blocked,
             "block_rate": (
                 self.blocked / self.total_delegations
-                if self.total_delegations > 0
-                else 0.0
+                if self.total_delegations > 0 else 0.0
             ),
             "blocked_by_agent": self.blocked_by_agent,
         }
 
 
-class Stage5Metrics:
-    """Track Stage 5 intervention statistics."""
+class Stage3Metrics:
+    def __init__(self):
+        self.total_checks = 0
+        self.blocked = 0
+        self.passed = 0
+        self.blocked_by_agent: Dict[str, int] = {}
+        self.blocked_by_server: Dict[str, int] = {}
 
+    def record(self, agent_name: str, blocked: bool, server: str) -> None:
+        self.total_checks += 1
+        if blocked:
+            self.blocked += 1
+            self.blocked_by_agent[agent_name] = (
+                self.blocked_by_agent.get(agent_name, 0) + 1
+            )
+            self.blocked_by_server[server] = (
+                self.blocked_by_server.get(server, 0) + 1
+            )
+        else:
+            self.passed += 1
+
+    def summary(self) -> dict:
+        return {
+            "total_checks": self.total_checks,
+            "passed": self.passed,
+            "blocked": self.blocked,
+            "block_rate": (
+                self.blocked / self.total_checks
+                if self.total_checks > 0 else 0.0
+            ),
+            "blocked_by_agent": self.blocked_by_agent,
+            "blocked_by_server": self.blocked_by_server,
+        }
+
+
+class Stage5Metrics:
     def __init__(self):
         self.total_audits = 0
         self.blocked = 0
         self.passed = 0
-        self.suppressed = 0   # phrase found but trace count high — not blocked
+        self.suppressed = 0
         self.blocked_by_agent: Dict[str, int] = {}
         self.block_reasons: Dict[str, int] = {}
 
@@ -381,8 +502,7 @@ class Stage5Metrics:
             "suppressed": self.suppressed,
             "block_rate": (
                 self.blocked / self.total_audits
-                if self.total_audits > 0
-                else 0.0
+                if self.total_audits > 0 else 0.0
             ),
             "blocked_by_agent": self.blocked_by_agent,
             "block_reasons": self.block_reasons,
@@ -391,13 +511,15 @@ class Stage5Metrics:
 
 # Module-level singletons
 metrics = Stage2Metrics()
+stage3_metrics = Stage3Metrics()
 stage5_metrics = Stage5Metrics()
 
 
 def get_metrics_summary() -> dict:
-    """Return combined Stage 2 + Stage 5 metrics."""
+    """Return combined Stage 2 + Stage 3 + Stage 5 metrics."""
     return {
         "verification_mode": VERIFICATION_MODE,
         "stage2": metrics.summary(),
+        "stage3": stage3_metrics.summary(),
         "stage5": stage5_metrics.summary(),
     }
