@@ -43,13 +43,15 @@ x-agent-env: &agent-env
   AGENT_SESSION_BINDINGS_PREFIX: "company-agent:session-bindings"
   AGENT_SESSION_BINDINGS_TTL_SECONDS: "86400"
   # ── Change this one line to switch phases ──────────────────────────────────
-  # baseline
-  # stage2
-  # stage2_stage5
-  # stage5_only 
-  # Phase 5 — Stage 3 + Stage 5 (the full access control + reliability combination)  stage3_stage5 
-  # # Phase 6 — Stage 3 only (isolate access control effect) stage3_only
-  VERIFICATION_MODE: "stage3_only"
+  # baseline        →  Phase 1 — no intervention
+  # stage2          →  Phase 2 — Stage 2 Pre-Delegation Check only
+  # stage2_stage5   →  Phase 3 — Stage 2 + Stage 5 combined
+  # stage5_only     →  Phase 4 — Stage 5 Post-Audit only (PRIMARY RESULT)
+  # stage3_stage5   →  Phase 5 — Stage 3 + Stage 5 combined
+  # stage3_only     →  Phase 6 — Stage 3 Capability-Scoped Access only
+  # stage4_only     →  Phase 7 — Stage 4 Parameter Validation only (NEW)
+  # stage4_stage5   →  Phase 8 — Stage 4 + Stage 5 combined (NEW)
+  VERIFICATION_MODE: "stage5_only"
 
 services:
   redis:
